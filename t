@@ -1,44 +1,17 @@
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-import numpy as np
-from collections import Counter
-
-def Tokenize(column, seq_len, representation='bow'):
-    ## Create BoW or TF-IDF representation
-    if representation == 'bow':
-        vectorizer = CountVectorizer()
-    elif representation == 'tfidf':
-        vectorizer = TfidfVectorizer()
-    else:
-        raise ValueError("Invalid representation. Choose 'bow' or 'tfidf'.")
-
-    # Fit the vectorizer on the text column and transform the text to BoW or TF-IDF representation
-    text_representation = vectorizer.fit_transform(column)
-
-    # Convert the representation to an array
-    text_array = text_representation.toarray()
-
-    # Tokenize the columns text using the vocabulary
-    text_int = []
-    for text in column:
-        r = [word for word in text.split()]
-        text_int.append(r)
-
-    # Add padding to tokens
-    features = np.zeros((len(text_int), seq_len), dtype=int)
-    for i, review in enumerate(text_int):
-        if len(review) <= seq_len:
-            zeros = list(np.zeros(seq_len - len(review)))
-            new = zeros + review
-        else:
-            new = review[: seq_len]
-        features[i, :] = np.array(new)
-
-    return text_array, features
-
-# Example usage:
-# Assuming 'your_column' is the column you want to process and seq_len is the desired sequence length
-# BoW representation
-sorted_words_bow, features_bow = Tokenize(your_column, seq_len, representation='bow')
-
-# TF-IDF representation
-sorted_words_tfidf, features_tfidf = Tokenize(your_column, seq_len, representation='tfidf')
+ros = RandomOverSampler()
+X_train, y_train = ros.fit_resample(np.array(X_train).reshape(-1, 1), np.array(y_train).reshape(-1, 1));
+train_os = pd.DataFrame(list(zip([x[0] for x in X_train], y_train)), columns = ['text_clean', 'sentiment']);
+X_train = train_os['text_clean'].values
+y_train = train_os['sentiment'].values
+(unique, counts) = np.unique(y_train, return_counts=True)
+np.asarray((unique, counts)).T
+# Naive Bayes baseline model
+clf = CountVectorizer()
+X_train_cv =  clf.fit_transform(X_train)
+X_test_cv = clf.transform(X_test)
+tf_transformer = TfidfTransformer(use_idf=True).fit(X_train_cv)
+X_train_tf = tf_transformer.transform(X_train_cv)
+X_test_tf = tf_transformer.transform(X_test_cv)
+nb_clf = MultinomialNB()
+nb_clf.fit(X_train_tf, y_train)
+nb_pred = nb_clf.predict(X_test_tf)
